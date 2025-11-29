@@ -113,13 +113,13 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fa-ir'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Tehran'
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 MEDIA_URL = "/media/"
@@ -139,3 +139,23 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 #     "*"
 # ]
 # CORS_ALLOW_ALL_ORIGINS = True
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework.authentication.SessionAuthentication'],
+    'EXCEPTION_HANDLER': 'config.utils.custom_exception_handler',
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/m',
+        'resend_email_confirmation_throttle': '2/m'
+    }
+}
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'         # مثال: Gmail SMTP
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = 'chamran.blog@gmail.com'
+EMAIL_HOST_PASSWORD = 'qevh tkjf gktj pstr'  # بهتر است از app password استفاده کنید
+
+FRONTEND_EMAIL_CONFIRMATION_URL = '/frontend/?uid={}&token={}'
