@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet, mixins
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, BasePermission
-from rest_framework.throttling import ScopedRateThrottle, AnonRateThrottle
+from rest_framework.throttling import ScopedRateThrottle, AnonRateThrottle, UserRateThrottle
 from django.contrib.auth import get_user_model
 from . import serializers
 from django.contrib.auth import login, logout
@@ -16,8 +16,12 @@ class IsAnonymousUser(BasePermission):
     def has_permission(self, request, view):
         return not bool(request.user and request.user.is_authenticated)
 
-class ResendEmailConfirmationThrottle(AnonRateThrottle):
-    scope = 'resend_email_confirmation_throttle'
+
+class ResetPasswordConfirmationThrottle(UserRateThrottle):
+    scope = 'reset_password_confirmation_throttle'
+
+class SendEmailConfirmationThrottle(UserRateThrottle):
+    scope = 'email_confirmation'
 
 
 class AuthViewSet(GenericViewSet):
@@ -36,6 +40,12 @@ class AuthViewSet(GenericViewSet):
 
         if self.action == 'resend_email_confirmation':
             return serializers.ResendEmailConfirmationSerializer
+
+        if self.action == 'send_reset_password_email_confirmation':
+            return serializers.SendResetPasswordEmailConfirmationSerializer
+
+        if self.action == 'confirm_reset_password':
+            return serializers.ConfirmResetPasswordSerializer
 
 
 
@@ -85,12 +95,38 @@ class AuthViewSet(GenericViewSet):
             status=status.HTTP_200_OK
         )
 
-    @action(methods=['post'], detail=False, permission_classes=[IsAnonymousUser], throttle_classes=[ResendEmailConfirmationThrottle])
+    @action(methods=['post'], detail=False, permission_classes=[IsAnonymousUser],
+            throttle_classes=[SendEmailConfirmationThrottle])
     def resend_email_confirmation(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         return Response(
             format_response(success=True, message='جهت فعال سازی حساب کاربری ایمیلی به شما ارسال شد.'),
+            status=status.HTTP_200_OK
+        )
+
+    @action(methods=['post'], detail=False,
+            throttle_classes=[SendEmailConfirmationThrottle]
+            )
+    def send_reset_password_email_confirmation(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        return Response(
+            format_response(success=True, message='جهت بازنشانی گذرواژه ایمیلی به شما ارسال شد.'),
+            status=status.HTTP_200_OK
+        )
+
+    @action(methods=['post'], detail=False,
+            throttle_classes=[ResetPasswordConfirmationThrottle]
+            )
+    def confirm_reset_password(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            format_response(success=True, message='بازنشانی گذرواژه باموفقیت انجام شد.'),
             status=status.HTTP_200_OK
         )

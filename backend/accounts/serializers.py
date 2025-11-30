@@ -1,13 +1,12 @@
 from django.conf import settings
-from django.utils import timezone
+from django.contrib.auth.models import User
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password, UserAttributeSimilarityValidator
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.core.validators import EmailValidator
 from accounts.models import CustomUser
 
-from django.core.mail import send_mail, EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes, force_str
@@ -17,16 +16,16 @@ from django.db.models import Q
 USER_MODEL: CustomUser = get_user_model()
 
 
-def send_confirmation_email(user):
+def send_confirmation_email(user, template_name, subject, url):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user=user)
 
-    subject = "ورود به حساب کاربری"
     from_email = settings.EMAIL_HOST_USER
 
-    html_content = render_to_string("accounts/email_confirmation.html",
+    html_content = render_to_string(template_name,
                                     {"username": user.username,
-                                     'login_url': settings.FRONTEND_EMAIL_CONFIRMATION_URL.format(uid, token)})
+                                     'url': url.format(uid, token)
+                                     })
 
     msg = EmailMultiAlternatives(subject, "", from_email, [user.email])
     msg.attach_alternative(html_content, "text/html")
@@ -67,7 +66,8 @@ class UserCreationSerializer(serializers.ModelSerializer):
             user.is_active = False
             user.save()
 
-            send_confirmation_email(user)
+            send_confirmation_email(user, 'accounts/email_confirmation.html', "ورود به حساب کاربری",
+                                    settings.FRONTEND_EMAIL_CONFIRMATION_URL)
 
             return user
 
@@ -98,7 +98,7 @@ class EmailConfirmationSerializer(serializers.Serializer):
 
         try:
             uid = force_str(urlsafe_base64_decode(data.get("user_id")))
-            user = USER_MODEL.objects.get(pk=uid)
+            user = USER_MODEL.objects.get(pk=uid, is_active=False)
         except (USER_MODEL.DoesNotExist , ValueError):
             raise serializers.ValidationError({'detail': 'تایید ایمیل ناموفق'})
 
@@ -115,9 +115,64 @@ class ResendEmailConfirmationSerializer(serializers.Serializer):
         email = data.get('email')
         user = USER_MODEL.objects.filter(email=email, is_active=False).first()
 
-        if not user:
-            raise serializers.ValidationError({'detail': 'اطلاعات وارد شده معتبر نیست.'})
+        if user:
+            send_confirmation_email(user, 'accounts/email_confirmation.html', "ورود به حساب کاربری",
+                                settings.FRONTEND_EMAIL_CONFIRMATION_URL)
+        return data
 
-        send_confirmation_email(user)
+class SendResetPasswordEmailConfirmationSerializer(serializers.Serializer):
+    email_or_username = serializers.CharField(label='نام کاربری یا ایمیل')
+
+    def validate(self, data):
+        email_or_username = data.get('email_or_username')
+
+        user = USER_MODEL.objects.filter(Q(email=email_or_username) | Q(username=email_or_username), is_active=True)
+
+        user = user.first()
+
+        if user:
+            send_confirmation_email(user, 'accounts/reset_password.html', "بازنشانی گذرواژه", settings.FRONTEND_RESET_PASSWORD_URL)
+
+        return {'user': user}
+
+class ConfirmResetPasswordSerializer(serializers.Serializer):
+    password1 = serializers.CharField(write_only=True, label='گذرواژه')
+    password2 = serializers.CharField(write_only=True, label='تکرار گذرواژه')
+    token = serializers.CharField()
+    user_id = serializers.CharField()
+
+
+    def validate(self, data):
+        password1 = data.get('password1')
+        password2 = data.get('password2')
+        user_id = data.get('user_id')
+        token = data.get('token')
+
+        try:
+            uid = force_str(urlsafe_base64_decode(user_id))
+            self.user = USER_MODEL.objects.get(pk=uid, is_active=True)
+        except (USER_MODEL.DoesNotExist, ValueError):
+            raise serializers.ValidationError({'detail': 'بازنشانی گدرواژه ناموفق'})
+
+        if not default_token_generator.check_token(self.user, token):
+            raise serializers.ValidationError({'detail': 'بازنشانی گدرواژه ناموفق'})
+
+        if password1 != password2:
+            raise serializers.ValidationError({'password':'دو گذرواژه یکسان نیست.'})
+
+        try:
+            temp_user = USER_MODEL(username=self.user.username, email=self.user.email)
+            validate_password(password1, user=temp_user)
+        except ValidationError as e:
+            raise serializers.ValidationError({'password': e.messages})
 
         return data
+
+
+    def save(self, *args, **kwargs):
+        password = self.validated_data.pop('password2')
+        self.user.set_password(password)
+        self.user.save()
+
+        return self.user
+

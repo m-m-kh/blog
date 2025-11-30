@@ -145,7 +145,8 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'config.utils.custom_exception_handler',
     'DEFAULT_THROTTLE_RATES': {
         'anon': '5/m',
-        'resend_email_confirmation_throttle': '2/m'
+        'email_confirmation': '3/m',
+        'reset_password_confirmation_throttle': '3/m',
     }
 }
 
@@ -158,4 +159,7 @@ EMAIL_USE_SSL = False
 EMAIL_HOST_USER = 'chamran.blog@gmail.com'
 EMAIL_HOST_PASSWORD = 'qevh tkjf gktj pstr'  # بهتر است از app password استفاده کنید
 
+PASSWORD_RESET_TIMEOUT = 3600
+
 FRONTEND_EMAIL_CONFIRMATION_URL = '/frontend/?uid={}&token={}'
+FRONTEND_RESET_PASSWORD_URL = '/frontend/?uid={}&token={}'
