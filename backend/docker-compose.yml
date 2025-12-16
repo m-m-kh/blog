@@ -1,0 +1,19 @@
+services:
+  blog:
+    build:
+      context: .
+
+    image: blog
+
+    ports:
+      - 8000:8000
+
+    volumes:
+      - .:/app
+
+    environment:
+      FRONTEND_EMAIL_CONFIRMATION_URL: http://example.com/confirm_email/
+      FRONTEND_RESET_PASSWORD_URL: http://example.com/reset_password/
+
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
