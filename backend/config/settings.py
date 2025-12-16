@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'django_jalali',
     'silk',
     'rest_framework',
     'django_filters',
@@ -117,7 +118,7 @@ TIME_ZONE = 'Asia/Tehran'
 
 USE_I18N = True
 
-USE_TZ = False
+USE_TZ = True
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR.joinpath('media')

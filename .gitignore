@@ -1,4 +1,4 @@
-backend/.idea
+**/.idea
 backend/.venv
 backend/media
 backend/db.sqlite3
