@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.views.decorators.csrf import get_token
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -61,6 +62,15 @@ class AccountViewSet(GenericViewSet):
             'user_info': serializers.UserInformationForProfileSerializer,
         }
         return action_serializers.get(self.action, Serializer)
+
+    @extend_schema(
+        description="Endpoint to set CSRF cookie for frontend",
+        responses={200: {"detail": "CSRF cookie set"}}
+    )
+    @action(detail=False, methods=['get'])
+    def get_csrf(self, request):
+        get_token(request)
+        return Response({"detail": "CSRF cookie set"}, status=200)
 
     @extend_schema(
         summary="User signup",
