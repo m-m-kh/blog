@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from os import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,7 +25,7 @@ SECRET_KEY = 'django-insecure-5e-zks=lv^j=^0%#b@=a109ix(jn968g+w*i&#l0-66o3it(le
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -135,7 +136,7 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 # CORS_ALLOWED_ORIGINS = [
 #     "*"
 # ]
-# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
@@ -173,17 +174,17 @@ REST_FRAMEWORK = {
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # مثال: Gmail SMTP
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_HOST_USER = 'chamran.blog@gmail.com'
-EMAIL_HOST_PASSWORD = 'qevh tkjf gktj pstr'  # بهتر است از app password استفاده کنید
+EMAIL_HOST_PASSWORD = 'qevh tkjf gktj pstr'
 
 PASSWORD_RESET_TIMEOUT = 3600
 
-FRONTEND_EMAIL_CONFIRMATION_URL = '/frontend/?uid={}&token={}'
-FRONTEND_RESET_PASSWORD_URL = '/frontend/?uid={}&token={}'
+FRONTEND_EMAIL_CONFIRMATION_URL = environ.get('FRONTEND_EMAIL_CONFIRMATION_URL') + '?uid={}&token={}'
+FRONTEND_RESET_PASSWORD_URL = environ.get('FRONTEND_RESET_PASSWORD_URL') + '?uid={}&token={}'
 
 
 SPECTACULAR_SETTINGS = {
