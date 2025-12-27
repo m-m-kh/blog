@@ -48,20 +48,63 @@ INSTALLED_APPS = [
     'blog',
 
 ]
+# INSTALLED_APPS = [
+#     "corsheaders",                     # ⬅️ CORS support
+#     "silk",                             # ⬅️ profiling
+#     "django.contrib.admin",
+#     "django.contrib.auth",
+#     "django.contrib.contenttypes",
+#     "django.contrib.sessions",
+#     "django.contrib.messages",
+#     "django.contrib.staticfiles",
 
+#     # third-party
+#     "rest_framework",
+#     "django_filters",
+#     "drf_spectacular",
+
+#     # your apps
+#     "accounts",
+#     "blog",
+# ]
+
+
+
+# MIDDLEWARE = [
+#     'silk.middleware.SilkyMiddleware',
+
+#     'django.middleware.security.SecurityMiddleware',
+#     'django.contrib.sessions.middleware.SessionMiddleware',
+#     'django.middleware.common.CommonMiddleware',
+#     'django.middleware.csrf.CsrfViewMiddleware',
+#     'django.contrib.auth.middleware.AuthenticationMiddleware',
+#     'django.contrib.messages.middleware.MessageMiddleware',
+#     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+#     'corsheaders.middleware.CorsMiddleware',
+# ]
+# MIDDLEWARE = [
+#     "corsheaders.middleware.CorsMiddleware",
+#     "django.middleware.security.SecurityMiddleware",
+#     "django.contrib.sessions.middleware.SessionMiddleware",
+#     "django.middleware.common.CommonMiddleware",
+#     "django.middleware.csrf.CsrfViewMiddleware",
+#     "django.contrib.auth.middleware.AuthenticationMiddleware",
+#     "django.contrib.messages.middleware.MessageMiddleware",
+#     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+# ]
 MIDDLEWARE = [
     'silk.middleware.SilkyMiddleware',
-
+    'corsheaders.middleware.CorsMiddleware',  # <-- MUST be BEFORE CommonMiddleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
+    'django.middleware.common.CommonMiddleware',  # <-- CORS should be before this
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-    'corsheaders.middleware.CorsMiddleware',
 ]
+
 
 ROOT_URLCONF = 'config.urls'
 
@@ -136,7 +179,50 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 # CORS_ALLOWED_ORIGINS = [
 #     "*"
 # ]
+# CORS_ALLOW_ALL_ORIGINS = True
+# added by me
+# CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+# CORS_ALLOW_CREDENTIALS = True
+# CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
+# CORS_ALLOW_CREDENTIALS = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",  # Your Next.js dev server
+#     "http://127.0.0.1:3000",
+# ]
+
+# CSRF_TRUSTED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://127.0.0.1:3000",
+# ]
+# CORS Settings
+# CORS_ALLOW_CREDENTIALS = True  # Important for cookies
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://127.0.0.1:3000",
+# ]
+
+# # Or if you want to allow all during development (not recommended for production):
+# # CORS_ALLOW_ALL_ORIGINS = True
+
+# # CSRF trusted origins
+# CSRF_TRUSTED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://127.0.0.1:3000",
+# ]
+# TEMPORARY - for testing only
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+]
+# Session cookie settings (important for cross-origin)
+SESSION_COOKIE_SAMESITE = 'Lax'  # or 'None' if using HTTPS
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = False
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',

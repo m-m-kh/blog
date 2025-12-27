@@ -12,8 +12,8 @@ services:
       - .:/app
 
     environment:
-      FRONTEND_EMAIL_CONFIRMATION_URL: http://example.com/confirm_email/
-      FRONTEND_RESET_PASSWORD_URL: http://example.com/reset_password/
+      FRONTEND_EMAIL_CONFIRMATION_URL: http://localhost:3000/confirm_email/
+      FRONTEND_RESET_PASSWORD_URL: http://localhost:3000/reset_password/
       PYTHONUNBUFFERED: 1
 
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
