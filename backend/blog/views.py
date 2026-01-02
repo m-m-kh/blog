@@ -43,18 +43,29 @@ class PostFilterSet(FilterSet):
         fields = ('title', 'content', 'author', 'tags', 'ordering', 'status')
 
 
+from rest_framework.permissions import BasePermission, SAFE_METHODS
+
 class AuthorOrReadOnlyPermission(BasePermission):
     def has_permission(self, request, view):
-        return bool(
-            request.method in SAFE_METHODS or
-            request.user and request.user.is_authenticated
-        )
+        if request.method in SAFE_METHODS:
+            return True
+
+        user = request.user
+
+        if not user.is_authenticated:
+            return False
+
+
+        return user.is_superuser or user.groups.filter(name='author').exists()
 
     def has_object_permission(self, request, view, obj):
-        return bool(
-            request.method in SAFE_METHODS or
-            obj.author == request.user
-        )
+        if request.method in SAFE_METHODS:
+            return True
+
+        user = request.user
+
+        return getattr(obj, 'author', None) == user
+
 
 
 class PostsViewSet(viewsets.ModelViewSet):
@@ -278,7 +289,7 @@ class PostsViewSet(viewsets.ModelViewSet):
 
 class MediaViewSet(viewsets.ModelViewSet):
     serializer_class = serializer.MediaSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AuthorOrReadOnlyPermission]
     throttle_classes = [ScopedRateThrottle]
 
     @property

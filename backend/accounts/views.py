@@ -10,6 +10,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.serializers import Serializer
 
 from django.contrib.auth import login, logout
+from django.contrib.auth.models import Group
 
 from . import serializers
 from .models import CustomUser
@@ -21,6 +22,10 @@ from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParamete
 class IsAnonymousUser(BasePermission):
     def has_permission(self, request, view):
         return not bool(request.user and request.user.is_authenticated)
+
+class IsSuperUser(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_superuser)
 
 class AccountViewSet(GenericViewSet):
     throttle_classes = [ScopedRateThrottle]
@@ -62,6 +67,9 @@ class AccountViewSet(GenericViewSet):
             'user_info': serializers.UserInformationForProfileSerializer,
         }
         return action_serializers.get(self.action, Serializer)
+
+    def list(self, request, *args, **kwargs):
+        return Response(self.get_extra_action_url_map())
 
     @extend_schema(
         description="Endpoint to set CSRF cookie for frontend",
@@ -338,4 +346,22 @@ class AccountViewSet(GenericViewSet):
 
         return Response(
             serializer.data
+        )
+
+    @action(methods=['post'],
+            detail=False, url_path='(?P<username>[^/.]+)/set_author',
+            permission_classes=[IsSuperUser])
+    def toggle_author_permission(self, request, username=None):
+        user_obj = get_object_or_404(CustomUser, username=username)
+
+        author_group = Group.objects.get_or_create(name='author')[0]
+
+        if author_status := user_obj.groups.filter(name='author').exists():
+            user_obj.groups.remove(author_group)
+        else:
+            user_obj.groups.add(author_group)
+
+
+        return Response(
+            not author_status
         )

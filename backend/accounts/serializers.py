@@ -193,9 +193,14 @@ class ConfirmResetPasswordSerializer(serializers.Serializer):
 
 
 class UserInformationSerializer(serializers.ModelSerializer):
+    is_author = serializers.SerializerMethodField()
+
+    def get_is_author(self, obj):
+        return obj.groups.filter(name='author').exists()
+
     class Meta:
         model = USER_MODEL
-        fields = ('username', 'email', 'first_name', 'last_name', 'last_login', 'profile_pic', 'bio')
+        fields = ('username', 'email', 'first_name', 'last_name', 'last_login', 'profile_pic', 'bio', 'is_author')
         extra_kwargs = {
             'email': {'read_only': True},
             'last_login': {'read_only': True},
@@ -203,13 +208,18 @@ class UserInformationSerializer(serializers.ModelSerializer):
 
 class UserInformationForPostSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(lookup_field='username', view_name='account-user-info')
+    is_author = serializers.SerializerMethodField()
+
+    def get_is_author(self, obj):
+        return obj.groups.filter(name='author').exists()
 
     class Meta:
         model = USER_MODEL
-        fields = ('url', 'username', 'first_name', 'last_name', 'profile_pic')
+        fields = ('url', 'username', 'first_name', 'last_name', 'profile_pic', 'is_author')
 
 class UserInformationForProfileSerializer(serializers.ModelSerializer):
     posts_url = serializers.SerializerMethodField()
+    is_author = serializers.SerializerMethodField()
 
     def get_posts_url(self, obj):
         request = self.context.get('request')
@@ -218,7 +228,10 @@ class UserInformationForProfileSerializer(serializers.ModelSerializer):
         url = request.build_absolute_uri(path)
         return url + '?' + query
 
+    def get_is_author(self, obj):
+        return obj.groups.filter(name='author').exists()
+
     class Meta:
         model = USER_MODEL
-        fields = ('username', 'first_name', 'last_name', 'profile_pic', 'bio', 'posts_url')
+        fields = ('username', 'first_name', 'last_name', 'profile_pic', 'bio', 'posts_url', 'is_author')
 
