@@ -54,8 +54,7 @@ export default function Home() {
             </h1>
 
             <p className="text-zinc-300 leading-relaxed mb-8">
-              I am a Web Developer and Blogger. Far far away, behind the word mountains, far from
-              the countries Vokalia and Consonantia, there live the blind texts.
+              I am a Web Developer and Blogger. Here, I and our community come together to post blogs, share experiences, and explore topics we’re passionate about.
             </p>
             <Link href="/about" className="inline-flex items-center gap-2 border border-sky-400 px-6 py-3 text-sky-400 hover:bg-sky-400 hover:text-black transition">
               More About Me →
