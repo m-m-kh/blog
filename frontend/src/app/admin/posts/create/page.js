@@ -1,12 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { EditorContent, useEditor } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Image from '@tiptap/extension-image'
-import Placeholder from '@tiptap/extension-placeholder'
 import { useRouter } from 'next/navigation'
 import AuthModal from '@/components/AuthModal'
+import 'quill/dist/quill.snow.css'
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL
 
@@ -18,6 +15,8 @@ function getCookie(name) {
 
 export default function CreatePostPage() {
   const router = useRouter()
+  const editorRef = useRef(null)
+  const quillRef = useRef(null)
   const fileInputRef = useRef(null)
 
   const [title, setTitle] = useState('')
@@ -29,18 +28,44 @@ export default function CreatePostPage() {
 
   const isAuthenticated = !!user?.message?.username
 
-  /* ---------------- editor ---------------- */
-  const editor = useEditor({
-    immediatelyRender: false,
-    extensions: [
-      StarterKit,
-      Image,
-      Placeholder.configure({
+  /* ---------------- init quill (CLIENT ONLY) ---------------- */
+  useEffect(() => {
+    if (!editorRef.current || quillRef.current) return
+
+    let mounted = true
+
+    ;(async () => {
+      const Quill = (await import('quill')).default
+      if (!mounted) return
+
+      quillRef.current = new Quill(editorRef.current, {
+        theme: 'snow',
         placeholder: 'Start writing your post...',
-      }),
-    ],
-    content: '',
-  })
+        modules: {
+          toolbar: [
+            ['bold', 'italic', 'underline'],
+            [{ header: [2, 3, false] }],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['image'],
+            ['clean'],
+          ],
+        },
+      })
+
+      // RTL / LTR auto
+      quillRef.current.root.style.direction = 'auto'
+      quillRef.current.root.style.unicodeBidi = 'plaintext'
+
+      // Image upload handler
+      quillRef.current.getModule('toolbar').addHandler('image', () => {
+        fileInputRef.current?.click()
+      })
+    })()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   /* ---------------- auth ---------------- */
   useEffect(() => {
@@ -52,8 +77,12 @@ export default function CreatePostPage() {
 
   /* ---------------- image upload ---------------- */
   async function handleImageUpload(file) {
-    if (!file || !editor) return
-    if (!isAuthenticated) return setShowAuth(true)
+    if (!file || !quillRef.current) return
+
+    if (!isAuthenticated) {
+      setShowAuth(true)
+      return
+    }
 
     setUploading(true)
     try {
@@ -68,9 +97,13 @@ export default function CreatePostPage() {
       })
 
       if (!res.ok) throw new Error()
-      const media = await res.json()
 
-      editor.chain().focus().setImage({ src: media.file }).run()
+      const media = await res.json()
+      const range = quillRef.current.getSelection(true)
+
+      // Insert image with proper formatting
+      quillRef.current.insertEmbed(range.index, 'image', media.file)
+      quillRef.current.setSelection(range.index + 1)
     } finally {
       setUploading(false)
     }
@@ -78,35 +111,58 @@ export default function CreatePostPage() {
 
   /* ---------------- submit ---------------- */
   async function handleSubmit() {
-    if (!editor) return
-    if (!isAuthenticated) return setShowAuth(true)
+    if (!quillRef.current) {
+      alert("Editor not ready yet. Please wait a moment.")
+      return
+    }
 
-    const content = editor.getHTML().trim()
-    if (!title.trim() || content === '<p></p>') {
+    if (!isAuthenticated) {
+      setShowAuth(true)
+      return
+    }
+
+    const content = quillRef.current.root.innerHTML.trim()
+    if (!title.trim() || content === '<p><br></p>') {
       alert('Title and content are required')
       return
     }
 
     setPublishing(true)
     try {
+      const csrfToken = getCookie('csrftoken')
+      if (!csrfToken) {
+        alert("CSRF token missing. Please reload the page.")
+        return
+      }
+
       const res = await fetch(`${API}/api/posts/`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
+          'X-CSRFToken': csrfToken,
         },
         body: JSON.stringify({
           title,
           content,
-          tags_list: tags.split(',').map(t => t.trim()).filter(Boolean),
+          tags_list: tags
+            .split(',')
+            .map(t => t.trim())
+            .filter(Boolean),
           status: true,
         }),
       })
 
-      if (!res.ok) throw new Error()
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Server responded with ${res.status}: ${errorText}`)
+      }
+
       const post = await res.json()
       router.push(`/blogs/${post.slug}`)
+    } catch (err) {
+      console.error("Error publishing post:", err)
+      alert("Something went wrong while publishing. Check console for details.")
     } finally {
       setPublishing(false)
     }
@@ -135,26 +191,6 @@ export default function CreatePostPage() {
                          focus:outline-none focus:ring-2 focus:ring-zinc-500"
             />
 
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isAuthenticated) return setShowAuth(true)
-                  fileInputRef.current?.click()
-                }}
-                className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition"
-                disabled={!editor}
-              >
-                🖼 Upload Image
-              </button>
-
-              {uploading && (
-                <span className="text-sm text-zinc-400 self-center">
-                  Uploading image...
-                </span>
-              )}
-            </div>
-
             <input
               ref={fileInputRef}
               type="file"
@@ -163,24 +199,31 @@ export default function CreatePostPage() {
               onChange={e => handleImageUpload(e.target.files?.[0])}
             />
 
-            <div className="border border-zinc-700 rounded-xl bg-zinc-900
-                            focus-within:ring-2 focus-within:ring-zinc-500 transition">
-              <EditorContent
-                editor={editor}
-                className="prose prose-invert max-w-none
-                  min-h-[300px] p-6 text-zinc-100 caret-white
-                  [&_.ProseMirror]:outline-none
-                  [&_.ProseMirror]:min-h-[300px]
-                  [&_.ProseMirror_img]:mx-auto
-                  [&_.ProseMirror_img]:max-w-[85%]
-                  [&_.ProseMirror_img]:rounded-xl
-                  [&_.ProseMirror_img]:my-8"
+            {/* Scrollable editor */}
+            <div className="rounded-xl overflow-hidden border border-zinc-700 bg-white text-black">
+              <div
+                ref={editorRef}
+                className="
+                  min-h-[300px] max-h-[450px] overflow-y-auto
+                  [&_.ql-editor]:p-4
+                  [&_.ql-editor_img]:mx-auto
+                  [&_.ql-editor_img]:my-6
+                  [&_.ql-editor_img]:rounded-xl
+                  [&_.ql-editor_img]:max-w-[85%]
+                  [&_.ql-editor_img]:shadow-md
+                  [&_.ql-editor_img]:border
+                  [&_.ql-editor_img]:border-zinc-300
+                "
               />
             </div>
 
+            {uploading && (
+              <p className="text-sm text-zinc-400">Uploading image...</p>
+            )}
+
             <button
               onClick={handleSubmit}
-              disabled={publishing || !editor}
+              disabled={publishing}
               className="px-6 py-3 rounded-lg bg-white text-black font-semibold
                          hover:bg-zinc-200 transition disabled:opacity-50"
             >
