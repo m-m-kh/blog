@@ -11,6 +11,37 @@ function getCookie(name) {
   if (parts.length === 2) return parts.pop().split(';').shift()
 }
 
+// ---------------- helper for RTL ----------------
+const isPersianOrArabic = text => /[\u0600-\u06FF]/.test(text)
+
+function renderContentWithDir(html) {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, 'text/html')
+  return Array.from(doc.body.childNodes).map((node, idx) => {
+    const text = node.textContent || ''
+    const dir = isPersianOrArabic(text) ? 'rtl' : 'ltr'
+
+    // keep all styling, only add dir
+    if (node.nodeName === 'P')
+      return <p key={idx} dir={dir} dangerouslySetInnerHTML={{ __html: node.innerHTML }} />
+    if (node.nodeName === 'H2')
+      return <h2 key={idx} dir={dir} dangerouslySetInnerHTML={{ __html: node.innerHTML }} />
+    if (node.nodeName === 'H3')
+      return <h3 key={idx} dir={dir} dangerouslySetInnerHTML={{ __html: node.innerHTML }} />
+    if (node.nodeName === 'IMG')
+      return (
+        <img
+          key={idx}
+          src={node.getAttribute('src')}
+          alt=""
+          className="mx-auto my-6 rounded-xl max-w-[85%] shadow-md border border-zinc-700"
+        />
+      )
+
+    return <div key={idx} dir={dir} dangerouslySetInnerHTML={{ __html: node.outerHTML }} />
+  })
+}
+
 export default function BlogDetailPage({ params }) {
   const { slug } = use(params)
 
@@ -45,10 +76,9 @@ export default function BlogDetailPage({ params }) {
         if (!postRes.ok) throw new Error()
         setPost(await postRes.json())
 
-        const commentRes = await fetch(
-          `${API}/api/posts/${slug}/comment/`,
-          { credentials: 'include' }
-        )
+        const commentRes = await fetch(`${API}/api/posts/${slug}/comment/`, {
+          credentials: 'include',
+        })
         if (commentRes.ok) {
           const data = await commentRes.json()
           setComments(data.results || [])
@@ -110,25 +140,20 @@ export default function BlogDetailPage({ params }) {
 
   /* ---------------- edit comment ---------------- */
   async function handleUpdate(id) {
-    const res = await fetch(
-      `${API}/api/posts/${slug}/comment/${id}/`,
-      {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
-        },
-        body: JSON.stringify({ content: editingText }),
-      }
-    )
+    const res = await fetch(`${API}/api/posts/${slug}/comment/${id}/`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      body: JSON.stringify({ content: editingText }),
+    })
 
     if (!res.ok) return
 
     const updated = await res.json()
-    setComments(prev =>
-      prev.map(c => (c.url === updated.url ? updated : c))
-    )
+    setComments(prev => prev.map(c => (c.url === updated.url ? updated : c)))
     setEditingId(null)
   }
 
@@ -136,14 +161,11 @@ export default function BlogDetailPage({ params }) {
   async function handleDelete(id) {
     if (!confirm('Delete this comment?')) return
 
-    const res = await fetch(
-      `${API}/api/posts/${slug}/comment/${id}/`,
-      {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'X-CSRFToken': getCookie('csrftoken') },
-      }
-    )
+    const res = await fetch(`${API}/api/posts/${slug}/comment/${id}/`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+    })
 
     if (res.status === 204) {
       setComments(prev => prev.filter(c => !c.url.endsWith(`/${id}/`)))
@@ -207,12 +229,13 @@ export default function BlogDetailPage({ params }) {
           {/* BLOG CONTENT */}
           <div
             className="[&_p]:mb-4 [&_p]:text-zinc-300 [&_p]:leading-relaxed
-              [&_img]:mx-auto [&_img]:my-6 [&_img]:rounded-xl [&_img]:max-w-[85%]
-              [&_img]:shadow-md [&_img]:border [&_img]:border-zinc-700
-              [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-10 [&_h2]:mb-4
-              [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-8 [&_h3]:mb-3"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
+                        [&_img]:mx-auto [&_img]:my-6 [&_img]:rounded-xl [&_img]:max-w-[85%]
+                        [&_img]:shadow-md [&_img]:border [&_img]:border-zinc-700
+                        [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-10 [&_h2]:mb-4
+                        [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-8 [&_h3]:mb-3"
+          >
+            {renderContentWithDir(post.content)}
+          </div>
 
           {/* LIKE BUTTON */}
           <div className="my-10">

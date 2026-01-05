@@ -13,6 +13,9 @@ function getCookie(name) {
   if (parts.length === 2) return parts.pop().split(';').shift()
 }
 
+// Regex to detect Persian/Arabic characters
+const isPersianOrArabic = text => /[\u0600-\u06FF]/.test(text)
+
 export default function CreatePostPage() {
   const router = useRouter()
   const editorRef = useRef(null)
@@ -52,13 +55,35 @@ export default function CreatePostPage() {
         },
       })
 
-      // RTL / LTR auto
-      quillRef.current.root.style.direction = 'auto'
       quillRef.current.root.style.unicodeBidi = 'plaintext'
 
       // Image upload handler
       quillRef.current.getModule('toolbar').addHandler('image', () => {
         fileInputRef.current?.click()
+      })
+
+      // Dynamically set RTL/LTR per line
+      quillRef.current.on('text-change', () => {
+        const selection = quillRef.current.getSelection()
+        if (!selection) return
+
+        const [line, offset] = quillRef.current.getLine(selection.index)
+        if (!line || !line.domNode) return
+
+        const text = line.domNode.innerText || ''
+        if (text.trim().length === 0) {
+          line.domNode.dir = 'ltr'
+          line.domNode.style.textAlign = 'left'
+          return
+        }
+
+        if (isPersianOrArabic(text)) {
+          line.domNode.dir = 'rtl'
+          line.domNode.style.textAlign = 'right'
+        } else {
+          line.domNode.dir = 'ltr'
+          line.domNode.style.textAlign = 'left'
+        }
       })
     })()
 
@@ -100,8 +125,6 @@ export default function CreatePostPage() {
 
       const media = await res.json()
       const range = quillRef.current.getSelection(true)
-
-      // Insert image with proper formatting
       quillRef.current.insertEmbed(range.index, 'image', media.file)
       quillRef.current.setSelection(range.index + 1)
     } finally {
