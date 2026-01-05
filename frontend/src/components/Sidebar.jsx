@@ -10,8 +10,8 @@ const API_BASE = "http://localhost:8000";
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
-
   const [user, setUser] = useState(null);
+
   const isAuthenticated = !!user;
 
   // 🔑 fetch logged-in user
@@ -53,42 +53,55 @@ export default function Sidebar() {
         <nav className="mt-12">
           <ul className="space-y-4 text-lg">
             <li>
-              <Link
-                href="/"
-                className="text-sky-400 font-semibold"
-              >
+              <Link href="/" className="text-sky-400 font-semibold">
                 Home
               </Link>
             </li>
 
             <li>
-              <Link
-                href="/blogs"
-                className="hover:text-sky-400 transition"
-              >
+              <Link href="/blogs" className="hover:text-sky-400 transition">
                 Blogs
               </Link>
             </li>
 
+            {isAuthenticated && (
+              <li>
+                <Link
+                  href="/myblogs"
+                  className="hover:text-sky-400 transition"
+                >
+                  My Blogs
+                </Link>
+              </li>
+            )}
+
             <li>
-              <Link
-                href="/about"
-                className="hover:text-sky-400 transition"
-              >
+              <Link href="/about" className="hover:text-sky-400 transition">
                 About
               </Link>
             </li>
 
             <li>
-              <Link
-                href="/contact"
-                className="hover:text-sky-400 transition"
-              >
+              <Link href="/contact" className="hover:text-sky-400 transition">
                 Contact
               </Link>
             </li>
           </ul>
         </nav>
+
+        {/* Create Blog — only when logged in */}
+        {isAuthenticated && (
+          <div className="mt-8">
+            <Link
+              href="/admin/posts/create"
+              className="block w-full py-2 rounded-lg
+                         bg-zinc-800 hover:bg-zinc-700
+                         text-white font-medium transition"
+            >
+              ✍️ Create Blog
+            </Link>
+          </div>
+        )}
 
         {/* Auth Section */}
         <div className="mt-10">

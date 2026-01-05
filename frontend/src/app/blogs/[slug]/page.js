@@ -167,41 +167,75 @@ export default function BlogDetailPage({ params }) {
     )
   }
 
+  // ✅ normalize tags (string OR array)
+  const tags =
+    Array.isArray(post.tags_list)
+      ? post.tags_list
+      : typeof post.tags_list === 'string' && post.tags_list.trim()
+      ? post.tags_list.split(',').map(t => t.trim())
+      : []
+
   return (
     <>
       <div className="min-h-screen bg-gradient-to-b from-zinc-900 to-black text-white">
         <div className="max-w-3xl mx-auto px-6 py-16">
 
-          <h1 className="text-4xl font-bold mb-3">{post.title}</h1>
+          {/* TITLE */}
+          <h1 className="text-4xl font-bold mb-2">{post.title}</h1>
 
-          <div className="text-sm text-zinc-400 mb-8">
+          <div className="text-sm text-zinc-400 mb-4">
             {post.author.username} •{' '}
             {new Date(post.created_at).toLocaleDateString()}
           </div>
 
-          <article className="prose prose-invert max-w-none mb-10">
-            {post.content}
-          </article>
+          {/* TAGS */}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-10">
+              {tags.map(tag => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 text-sm rounded-full
+                             bg-zinc-800 text-zinc-300
+                             border border-zinc-700"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
 
-          <button
-            onClick={handleLike}
-            className={`mb-14 flex items-center gap-2 px-6 py-2 rounded-full cursor-pointer
-              ${
-                post.you_liked
-                  ? 'bg-pink-600 hover:bg-pink-500'
-                  : 'bg-zinc-800 hover:bg-zinc-700'
-              }`}
-          >
-            ❤️ {post.likes}
-          </button>
+          {/* BLOG CONTENT */}
+          <div
+            className="[&_p]:mb-4 [&_p]:text-zinc-300 [&_p]:leading-relaxed
+              [&_img]:mx-auto [&_img]:my-6 [&_img]:rounded-xl [&_img]:max-w-[85%]
+              [&_img]:shadow-md [&_img]:border [&_img]:border-zinc-700
+              [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-10 [&_h2]:mb-4
+              [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-8 [&_h3]:mb-3"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+
+          {/* LIKE BUTTON */}
+          <div className="my-10">
+            <button
+              onClick={handleLike}
+              className={`flex items-center gap-2 px-6 py-2 rounded-full
+                ${
+                  post.you_liked
+                    ? 'bg-pink-600 hover:bg-pink-500'
+                    : 'bg-zinc-800 hover:bg-zinc-700'
+                }`}
+            >
+              ❤️ {post.likes}
+            </button>
+          </div>
 
           {/* COMMENTS */}
-          <section className="mt-16">
+          <section className="mt-16 space-y-6">
             <h2 className="text-2xl font-semibold mb-6">
               Comments ({comments.length})
             </h2>
 
-            <div className="space-y-4 mb-8">
+            <div className="space-y-4">
               {comments.map(c => {
                 const isOwner = c.author?.username === username
                 const id = c.url.split('/').filter(Boolean).pop()
@@ -211,7 +245,7 @@ export default function BlogDetailPage({ params }) {
                     key={c.url}
                     className="bg-zinc-800/60 p-4 rounded-xl border border-zinc-700"
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         {c.author?.profile_pic && (
                           <img
@@ -232,17 +266,14 @@ export default function BlogDetailPage({ params }) {
                               setEditingText(c.content)
                             }}
                             className="text-sky-400 hover:text-sky-300"
-                            title="Edit"
                           >
-                            <i className="fa-solid fa-pen" />
+                            Edit
                           </button>
-
                           <button
                             onClick={() => handleDelete(id)}
                             className="text-red-400 hover:text-red-300"
-                            title="Delete"
                           >
-                            <i className="fa-solid fa-trash" />
+                            Delete
                           </button>
                         </div>
                       )}
@@ -257,7 +288,6 @@ export default function BlogDetailPage({ params }) {
                             bg-zinc-900 border border-zinc-700
                             p-4 text-white mb-3"
                         />
-
                         <div className="flex gap-4">
                           <button
                             onClick={() => handleUpdate(id)}
@@ -274,7 +304,7 @@ export default function BlogDetailPage({ params }) {
                         </div>
                       </>
                     ) : (
-                      <p className="text-zinc-200">{c.content}</p>
+                      <p className="text-zinc-200 leading-relaxed">{c.content}</p>
                     )}
                   </div>
                 )
@@ -285,19 +315,22 @@ export default function BlogDetailPage({ params }) {
               )}
             </div>
 
+            {/* ADD COMMENT */}
             <form onSubmit={handleCommentSubmit} className="space-y-4">
               <textarea
                 value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
+                onChange={e => setCommentText(e.target.value)}
                 placeholder="Write a comment..."
                 className="w-full min-h-[120px] resize-none rounded-xl
                   bg-zinc-900 border border-zinc-700
-                  p-4 text-white placeholder-zinc-500"
+                  p-4 text-white placeholder-zinc-500
+                  focus:outline-none focus:ring-2 focus:ring-zinc-500"
               />
 
               <button
                 type="submit"
-                className="px-6 py-2 rounded-lg bg-white text-black font-medium cursor-pointer hover:bg-zinc-200 transition"
+                className="px-6 py-2 rounded-lg bg-white text-black
+                  font-medium hover:bg-zinc-200 transition"
               >
                 Submit Comment
               </button>
