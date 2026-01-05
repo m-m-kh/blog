@@ -347,7 +347,25 @@ class AccountViewSet(GenericViewSet):
         return Response(
             serializer.data
         )
-
+    
+    @extend_schema(
+        summary="Toggle author group membership for a user",
+        description=(
+            "This endpoint toggles the membership of a user in the 'author' group. "
+            "If the user is already a member, they will be removed. "
+            "If they are not a member, they will be added."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="username",
+                description="The username of the user to toggle 'author' membership",
+                required=True,
+                type=str,
+                location=OpenApiParameter.PATH,
+            )
+        ],
+        
+    )
     @action(methods=['post'],
             detail=False, url_path='(?P<username>[^/.]+)/set_author',
             permission_classes=[IsSuperUser])

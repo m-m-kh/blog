@@ -48,11 +48,11 @@ class Post(models.Model):
         default=True,
         verbose_name="وضعیت انتشار"
     )
-    created_at = jmodels.jDateTimeField(
+    created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="تاریخ ایجاد"
     )
-    updated_at = jmodels.jDateTimeField(
+    updated_at = models.DateTimeField(
         auto_now=True,
         verbose_name="تاریخ آخرین ویرایش"
     )
