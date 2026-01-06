@@ -5,7 +5,7 @@ import AuthModal from "./AuthModal";
 import UserMenu from "./UserMenu";
 import Link from "next/link";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);

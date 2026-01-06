@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const API = process.env.NEXT_PUBLIC_API_BASE_URL
+
 export default function UserMenu({ user, onLogout }) {
   console.log("UserMenu received user:", user); // <-- Add this
 
@@ -18,7 +20,7 @@ export default function UserMenu({ user, onLogout }) {
   }
 
   async function handleLogout() {
-    await fetch("http://localhost:8000/api/account/logout/", {
+    await fetch(`${API}/api/account/logout/`, {
       method: "POST",
       credentials: "include",
       headers: {

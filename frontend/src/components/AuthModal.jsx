@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+const API = process.env.NEXT_PUBLIC_API_BASE_URL
+
 export default function AuthModal({ onClose }) {
   const [mode, setMode] = useState("login"); // "login" or "signup"
   const [loading, setLoading] = useState(false);
@@ -18,7 +20,7 @@ export default function AuthModal({ onClose }) {
 
   // Helper to fetch CSRF cookie
   async function getCSRF() {
-    await fetch("http://localhost:8000/api/account/get_csrf/", {
+    await fetch(`${API}/api/account/get_csrf/`, {
       credentials: "include",
     });
   }
@@ -35,13 +37,13 @@ export default function AuthModal({ onClose }) {
       let body = {};
 
       if (mode === "login") {
-        url = "http://localhost:8000/api/account/login/";
+        url = `${API}/api/account/login/`;
         body = {
           email_or_username: form.email_or_username,
           password: form.password,
         };
       } else {
-        url = "http://localhost:8000/api/account/signup/";
+        url = `${API}/api/account/signup/`;
         body = {
           username: form.username,
           first_name: form.first_name,

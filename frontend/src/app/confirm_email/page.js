@@ -3,6 +3,8 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+const API = process.env.NEXT_PUBLIC_API_BASE_URL
+
 export default function ConfirmEmailPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -16,7 +18,7 @@ export default function ConfirmEmailPage() {
       return;
     }
 
-    fetch("http://localhost:8000/api/account/email_confirmation/", {
+    fetch(`${API}/api/account/email_confirmation/`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
